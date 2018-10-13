@@ -8,31 +8,24 @@ name = "episod"
 path = "src/lib.rs"
 
 [dependencies]
-log = "0.4"
-fern = "0.5"
-env_logger = "0.5"
-chrono = { version = "0.4", features = [ "serde" ] }
+# Crates to interact with AWS
+aws_lambda = { git = "https://github.com/srijs/rust-aws-lambda" }
+rusoto_core = "0.34"
+rusoto_sns = "0.34"
+http = "0.1"
 
-lazy_static = "1.1"
-clap = "2.32"
-toml = "0.4"
-structopt = "0.2"
+# Crate to make http request from lambda
+reqwest = "0.9"
 
-select = "0.4"
-uuid = { version = "0.7", features = ["serde", "v4"] }
-futures = "0.1"
-
-failure = "0.1"
-
+# Serde
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 serde_urlencoded = "0.5"
 
-aws_lambda = { git = "https://github.com/srijs/rust-aws-lambda" }
-http = "0.1"
-reqwest = "0.9"
-rusoto_core = "0.34"
-rusoto_sns = "0.34"
-
+# Crates related to domain
+chrono = { version = "0.4", features = [ "serde" ] }
+lazy_static = "1.1"
+failure = "0.1"
 rand = "0.5"
+select = "0.4"
