@@ -12,13 +12,9 @@ extern crate failure;
 #[macro_use]
 extern crate lazy_static;
 
-#[cfg(feature = "aws")]
 extern crate aws_lambda;
-#[cfg(feature = "aws")]
 extern crate reqwest;
-#[cfg(feature = "aws")]
 extern crate rusoto_core;
-#[cfg(feature = "aws")]
 extern crate rusoto_sns;
 
 extern crate episod;
