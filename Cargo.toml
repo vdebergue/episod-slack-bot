@@ -15,7 +15,7 @@ rusoto_sns = "0.34"
 http = "0.1"
 
 # Crate with slack types
-slack_push = { path = "../slack-push/" }
+slack_push = { git = "https://github.com/mockersf/slack-push" }
 
 # Crate to make http request from lambda
 reqwest = "0.9"
