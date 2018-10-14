@@ -1,6 +1,6 @@
 use rand;
 use rand::Rng;
-use slack_push;
+use slack_push::message::{Attachment, AttachmentAction, Message};
 
 use super::Session;
 
@@ -9,24 +9,23 @@ static COLORS: [&'static str; 13] = [
     "#800080", "#3cb371", "#ffa500", "#6a5acd", "#ee82ee",
 ];
 
-pub fn sessions_to_slack_message(
-    sessions: &Vec<Session>,
-    channel: String,
-) -> slack_push::MessageStandard {
-    slack_push::MessageStandard {
+pub fn sessions_to_slack_message(sessions: &[Session], channel: String) -> Message {
+    Message {
             attachments: Some(sessions
                 .iter()
                 .take(10)
-                .map(|session| slack_push::MessageStandardAttachment {
+                .map(|session| Attachment {
                     text: Some(format!(
                         "{} le *{}* à *{}* ({} minutes)",
                         session.sport, session.date, session.time, session.duration_minutes
                     )),
-                    actions: Some(vec![slack_push::MessageStandardAttachmentAction {
-                        ty: Some("button".to_string()),
+                    actions: Some(vec![AttachmentAction::Button {
                         url: Some(session.reservation_link.clone()),
-                        text: Some("Réserver 🏅".to_string()),
+                        text: "Réserver 🏅".to_string(),
                         style: Some("primary".to_string()),
+                        name: None,
+                        value: None,
+                        confirm: None,
                     }]),
                     thumb_url: match session.sport.as_ref() {
                         "bootcamp" => Some("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/apple/129/weight-lifter_1f3cb.png".to_string()),
@@ -43,7 +42,7 @@ pub fn sessions_to_slack_message(
                     author_name: Some(format!("{} ({})", session.coach, session.hub)),
                     ..Default::default()
                 }).collect()),
-            channel: Some(channel),
+            channel: channel,
             ..Default::default()
         }
 }

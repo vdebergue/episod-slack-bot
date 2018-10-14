@@ -17,24 +17,24 @@ extern crate slack_push;
 extern crate episod;
 
 use std::collections::HashMap;
+use std::env;
 
 use rusoto_sns::Sns;
+use slack_push::event::{Event, EventInfo};
 
 mod aws_api_helpers;
 mod aws_helpers;
 
-use std::env;
-
 pub fn slack_event(
     req: &aws_api_helpers::ShortApiGatewayProxyRequest,
 ) -> Result<http::response::Response<String>, failure::Error> {
-    let event: slack_push::Event = serde_json::from_str(&req.clone().body.unwrap())?;
+    let event: Event = serde_json::from_str(&req.clone().body.unwrap())?;
     match event {
-        slack_push::Event::UrlVerification { challenge, .. } => {
+        Event::UrlVerification { challenge, .. } => {
             Ok(http::response::Builder::new().status(200).body(challenge)?)
         }
-        slack_push::Event::EventCallback { event, token, .. } => match event {
-            slack_push::EventCallback::AppMention { channel, text, .. } => {
+        Event::EventCallback { event, token, .. } => match event {
+            EventInfo::AppMention { channel, text, .. } => {
                 let client = rusoto_sns::SnsClient::new(rusoto_core::Region::UsEast1);
                 client
                     .publish(rusoto_sns::PublishInput {
@@ -51,7 +51,13 @@ pub fn slack_event(
                     .status(200)
                     .body("".to_string())?)
             }
+            _ => Ok(http::response::Builder::new()
+                .status(400)
+                .body("unsupported event type".to_string())?),
         },
+        _ => Ok(http::response::Builder::new()
+            .status(400)
+            .body("unsupported event type".to_string())?),
     }
 }
 
