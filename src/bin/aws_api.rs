@@ -2,7 +2,6 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-extern crate serde_urlencoded;
 
 extern crate http;
 
@@ -22,6 +21,7 @@ use std::collections::HashMap;
 use rusoto_sns::Sns;
 
 mod aws_api_helpers;
+mod aws_helpers;
 
 use std::env;
 
@@ -38,7 +38,7 @@ pub fn slack_event(
                 let client = rusoto_sns::SnsClient::new(rusoto_core::Region::UsEast1);
                 client
                     .publish(rusoto_sns::PublishInput {
-                        message: serde_json::to_string(&Notification {
+                        message: serde_json::to_string(&aws_helpers::Notification {
                             token,
                             channel,
                             query: text,
@@ -53,13 +53,6 @@ pub fn slack_event(
             }
         },
     }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Notification {
-    token: String,
-    channel: String,
-    query: String,
 }
 
 fn main() {
