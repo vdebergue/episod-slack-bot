@@ -7,9 +7,6 @@ extern crate serde_urlencoded;
 extern crate http;
 
 #[macro_use]
-extern crate failure;
-
-#[macro_use]
 extern crate lazy_static;
 
 extern crate aws_lambda;
@@ -17,9 +14,9 @@ extern crate reqwest;
 
 extern crate rand;
 
-extern crate episod;
+extern crate slack_push;
 
-use std::collections::HashMap;
+extern crate episod;
 
 use rand::Rng;
 
@@ -31,8 +28,6 @@ lazy_static! {
             .unwrap()
     };
 }
-
-mod aws_api_helpers;
 
 use std::env;
 
@@ -154,7 +149,7 @@ fn pseudo_nlp(query: &str) -> episod::episod::Filters {
     }
 }
 
-fn send_sessions(notifications: aws_lambda::event::sns::SnsEvent) {
+fn send_sessions(notifications: &aws_lambda::event::sns::SnsEvent) {
     let colors = vec![
         "#C0C0C0", "#FF0000", "#00FF00", "#439FE0", "#00FFFF", "#008080", "#0000FF", "#FF00FF",
         "#800080", "#3cb371", "#ffa500", "#6a5acd", "#ee82ee",
@@ -165,22 +160,21 @@ fn send_sessions(notifications: aws_lambda::event::sns::SnsEvent) {
 
         let sessions =
             episod::episod::extract_sessions_and_filter(&PLANNING_HTML, &pseudo_nlp(&msg.query));
-        send_to_slack(&episod::slack::Message {
-            attachments: sessions
+        send_to_slack(&slack_push::MessageStandard {
+            attachments: Some(sessions
                 .iter()
                 .take(10)
-                .map(|session| episod::slack::Attachment {
-                    fallback: None,
+                .map(|session| slack_push::MessageStandardAttachment {
                     text: Some(format!(
                         "{} le *{}* à *{}* ({} minutes)",
                         session.sport, session.date, session.time, session.duration_minutes
                     )),
-                    actions: vec![episod::slack::AttachmentAction {
-                        action_type: "button".to_string(),
-                        url: session.reservation_link.clone(),
-                        text: "Réserver 🏅".to_string(),
+                    actions: Some(vec![slack_push::MessageStandardAttachmentAction {
+                        ty: Some("button".to_string()),
+                        url: Some(session.reservation_link.clone()),
+                        text: Some("Réserver 🏅".to_string()),
                         style: Some("primary".to_string()),
-                    }],
+                    }]),
                     thumb_url: match session.sport.as_ref() {
                         "bootcamp" => Some("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/apple/129/weight-lifter_1f3cb.png".to_string()),
                         "boxing" => Some("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/apple/129/boxing-glove_1f94a.png".to_string()),
@@ -192,18 +186,17 @@ fn send_sessions(notifications: aws_lambda::event::sns::SnsEvent) {
                         "pilates" => Some("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/apple/129/person-doing-cartwheel_1f938.png".to_string()),
                         _ => Some("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/apple/129/flexed-biceps_1f4aa.png".to_string()),
                     },
-                    ts: None,
                     color: Some(rand::thread_rng().choose(&colors).unwrap().to_string()),
-                    author_name: Some(format!("{} ({})", session.coach, session.hub))
-                }).collect(),
-            channel: msg.channel,
-            token: msg.token,
-            text: None,
+                    author_name: Some(format!("{} ({})", session.coach, session.hub)),
+                    ..Default::default()
+                }).collect()),
+            channel: Some(msg.channel),
+            ..Default::default()
         });
     });
 }
 
-fn send_to_slack(message: &episod::slack::Message) {
+fn send_to_slack(message: &slack_push::MessageStandard) {
     reqwest::Client::new()
         .post("https://slack.com/api/chat.postMessage")
         .json(message)
@@ -216,12 +209,7 @@ fn send_to_slack(message: &episod::slack::Message) {
 
 fn main() {
     aws_lambda::start(|notifications: aws_lambda::event::sns::SnsEvent| {
-        send_sessions(notifications);
-        Ok(aws_lambda::event::apigw::ApiGatewayProxyResponse {
-            body: Some("not gateway anyway".to_string()),
-            status_code: 200,
-            is_base64_encoded: None,
-            headers: HashMap::new(),
-        })
+        send_sessions(&notifications);
+        Ok(())
     })
 }

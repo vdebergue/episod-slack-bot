@@ -13,6 +13,8 @@ extern crate aws_lambda;
 extern crate rusoto_core;
 extern crate rusoto_sns;
 
+extern crate slack_push;
+
 extern crate episod;
 
 use std::collections::HashMap;
@@ -26,13 +28,13 @@ use std::env;
 pub fn slack_event(
     req: &aws_api_helpers::ShortApiGatewayProxyRequest,
 ) -> Result<http::response::Response<String>, failure::Error> {
-    let event: episod::slack::Event = serde_json::from_str(&req.clone().body.unwrap())?;
+    let event: slack_push::Event = serde_json::from_str(&req.clone().body.unwrap())?;
     match event {
-        episod::slack::Event::UrlVerification { challenge, .. } => {
+        slack_push::Event::UrlVerification { challenge, .. } => {
             Ok(http::response::Builder::new().status(200).body(challenge)?)
         }
-        episod::slack::Event::EventCallback { event, token, .. } => match event {
-            episod::slack::EventCallback::AppMention { channel, text, .. } => {
+        slack_push::Event::EventCallback { event, token, .. } => match event {
+            slack_push::EventCallback::AppMention { channel, text, .. } => {
                 let client = rusoto_sns::SnsClient::new(rusoto_core::Region::UsEast1);
                 client
                     .publish(rusoto_sns::PublishInput {
